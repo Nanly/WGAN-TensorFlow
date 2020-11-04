@@ -33,16 +33,16 @@ class WGAN(object):
         self.Y = tf.placeholder(tf.float32, shape=[None, *self.image_size], name='output')
         self.z = tf.placeholder(tf.float32, shape=[None, self.flags.z_dim], name='latent_vector')
 
-        self.g_samples = self.generator(self.z) #z shu ru dao G generate xu ni yang ben
-        _, d_logit_real = self.discriminator(self.Y) #Y shu ru dao D zhong
-        _, d_logit_fake = self.discriminator(self.g_samples, is_reuse=True) #g_sample shu ru dao D zhong
+        self.g_samples = self.generator(self.z) #z 输入到生成器G中生成虚拟样本g_samples
+        _, d_logit_real = self.discriminator(self.Y) #Y输入到判别器D中
+        _, d_logit_fake = self.discriminator(self.g_samples, is_reuse=True) #g_sample 输入到判别器 D zhong
 
         #discriminator loss
         self.d_loss = tf.reduce_mean(d_logit_real) - tf.reduce_mean(d_logit_fake)
         #generator loss
         self.g_loss = -tf.reduce_mean(d_logit_fake)
 
-        #huo qu D & G de canshu
+        #获取D & G 的训练参数
         d_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='d_')
         g_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='g_')
 
@@ -50,7 +50,7 @@ class WGAN(object):
         dis_op =tf.train.RMSPropOptimizer(learning_rate=self.flags.learning_rate).minimize(-self.d_loss, var_list=d_vars)
         dis_ops = [dis_op] +self._dis_train_ops
         self.dis_optim = tf.group(*dis_ops)
-        #clip_by_value(): xian zhi var de  fan wei
+        #clip_by_value(): 限制参数var的值在clip_val范围内
         self.clip_dis = [var.assign(tf.clip_by_value(var, -self.flags.clip_val, self.flags.clip_val)) for var in d_vars]
 
         gen_op = tf.train.RMSPropOptimizer(learning_rate=self.flags.learning_rate).minimize(self.g_loss, var_list=g_vars)
@@ -65,7 +65,7 @@ class WGAN(object):
 
     def generator(self, data, name='g_'):
         with tf.variable_scope(name):
-            data_flatten = flatten(data)
+            data_flatten = flatten(data) #返回一个一维数组， 多维输入一维话
 
             #4 x 4
             h0_linear = tf_utils.linear(data_flatten, 4*4*self.gen_c[0], name='h0_linear')
